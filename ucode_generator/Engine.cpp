@@ -112,12 +112,11 @@ void Engine::update_ctrl_addr() {
 	}
 }
 
-sol::optional<unsigned int> Engine::get_ctrl_sequence(const std::string& lua_value) {
-	sol::optional<unsigned int> ctrl_sequence = sol::nullopt;
+unsigned int Engine::get_ctrl_sequence(const std::string& lua_value) {
+	unsigned int ctrl_sequence = 0;
 
 	const sol::optional<std::vector<std::string>> sequence_str = m_lua[lua_value];
 	if (sequence_str.has_value()) {
-		ctrl_sequence = 0;
 		for (const auto& cs : *sequence_str) {
 			std::vector<std::string> table_path = string_split<'.'>(cs);
 			if (table_path.empty())
@@ -145,7 +144,7 @@ sol::optional<unsigned int> Engine::get_ctrl_sequence(const std::string& lua_val
 			if (!cs_int.has_value())
 				throw std::runtime_error{ "[setup.lua] Invalid control signal for '" + lua_value + "': " + cs };
 
-			*ctrl_sequence |= *cs_int;
+			ctrl_sequence |= *cs_int;
 		}
 	}
 

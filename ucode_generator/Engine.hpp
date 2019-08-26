@@ -21,8 +21,7 @@ private:
 
 	void update_ctrl_addr();
 
-	sol::optional<unsigned int> get_ctrl_sequence(const std::string& lua_value);
-	
+	unsigned int get_ctrl_sequence(const std::string& lua_value);
 
 	template<typename T> void update_lua_table(const std::vector<std::string>& path, T value);
 	template<typename T> T expect_value(const std::string& name);
@@ -33,7 +32,7 @@ private:
 	std::string m_script_folder{};
 
 	std::unordered_map<std::string, bool> m_ctrl_addr{};
-	sol::optional<unsigned int> m_start_cycle{ sol::nullopt }, m_fetch_cycle{ sol::nullopt }, m_phase_inc{ sol::nullopt };
+	unsigned int m_start_cycle{ 0 }, m_fetch_cycle{ 0 }, m_phase_inc{ 0 };
 };
 
 #include "Engine.inl"
