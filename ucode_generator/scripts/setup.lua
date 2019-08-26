@@ -20,5 +20,5 @@ ctrl_sigs = {
 }
 
 start_cycle = { "LAR.LO" }
-fetch_cylce = { "PHASE.RESET", "PC.CO", "PC.UP" }
+fetch_cycle = { "PHASE.RESET", "PC.CO", "PC.UP" }
 phase_inc = { "PHASE.CO" }

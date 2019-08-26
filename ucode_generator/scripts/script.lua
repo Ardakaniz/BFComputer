@@ -6,7 +6,7 @@ else
 		if not acf then
 			exec({ RAM.OE, ALU.LO })
 		end	
-		exec({ ALU.CO, ALU.UP, "str" })
+		exec({ ALU.CO, ALU.UP })
 
 	elseif is_opcode("-") then
 		if not acf then
