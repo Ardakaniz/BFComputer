@@ -23,11 +23,9 @@ private:
 
 	sol::optional<unsigned int> get_ctrl_sequence(const std::string& lua_value);
 	
-	template<typename T>
-	void update_lua_table(const std::vector<std::string>& path, T value);
 
-	template<typename T>
-	T expect_value(const std::string& name);
+	template<typename T> void update_lua_table(const std::vector<std::string>& path, T value);
+	template<typename T> T expect_value(const std::string& name);
 
 
 
