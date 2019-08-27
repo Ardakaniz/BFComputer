@@ -26,6 +26,5 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	std::cin.get();
-	return 0;
+	return EXIT_SUCCESS;
 }
