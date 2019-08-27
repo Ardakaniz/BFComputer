@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <vector>
-#include <iostream>
 
 Engine::Engine(const std::string& script_folder) :
 	m_script_folder{ script_folder }
@@ -32,8 +31,6 @@ Engine::Engine(const std::string& script_folder) :
 }
 
 void Engine::generate() {
-	using namespace std::placeholders;
-
 	bool is_start{ false }, do_fetch{ false };
 	m_lua.set_function("exec", [&is_start, &do_fetch, this](const sol::table& cs) { lua_exec( is_start, do_fetch, true, true, true, cs); });
 	m_lua.set_function("exec_no_start", [&is_start, &do_fetch, this](const sol::table& cs) { lua_exec(is_start, do_fetch, false, true, true, cs); });
