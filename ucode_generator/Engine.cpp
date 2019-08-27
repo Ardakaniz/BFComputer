@@ -1,6 +1,7 @@
 #include "Engine.hpp"
 #include "StringSplit.hpp"
 
+#include <fstream>
 #include <vector>
 #include <iostream>
 
@@ -52,8 +53,20 @@ void Engine::generate() {
 	}
 }
 
-void Engine::save_hex(const std::string& output_filename) {
+void Engine::save_hex() {
+	std::ofstream hex;
+	for (unsigned int cs_idx{ 0 }; cs_idx < static_cast<unsigned int>(std::ceil(m_ctrl_sigs_count / 8.)); ++cs_idx) {
+		const std::string filename{ "out" + std::to_string(cs_idx * 8) + "-" + std::to_string(cs_idx * 8 + 7) + ".hex" };
 
+		hex.open(filename, std::ios::binary);
+		if (!hex.is_open())
+			throw std::runtime_error{ "Failed to create hex file: " + filename };
+
+		for (auto ucode_word : m_ucode_rom) {
+			hex.put(static_cast<char>((ucode_word >> (cs_idx * 8)) & 0xff));
+		}		
+		hex.close();
+	}
 }
 
 void Engine::generate_ctrl_addr() {

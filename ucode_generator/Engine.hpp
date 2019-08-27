@@ -13,7 +13,7 @@ public:
 	Engine(const std::string& script_folder);
 
 	void generate();
-	void save_hex(const std::string& output_filename);
+	void save_hex();
 
 private:
 	void generate_ctrl_addr();

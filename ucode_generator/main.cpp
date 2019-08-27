@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
 	try {
 		Engine engine{ script_folder };
 		engine.generate();
-		engine.save_hex("ucode.hex");
+		engine.save_hex();
 	}
 	catch (const sol::error& e) {
 		std::cerr << e.what() << std::endl;
