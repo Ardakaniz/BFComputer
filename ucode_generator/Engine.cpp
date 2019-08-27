@@ -121,7 +121,7 @@ void Engine::generate_ctrl_addr() {
 	if (already_found.size() != 3)
 		throw std::runtime_error{ "[setup.lua] Invalid control adress organization: FLAGS, PHASE or OPCODE is missing" };
 
-	m_phase_pos = m_ctrl_addr.size() - m_phase_pos - static_cast<unsigned int>(std::ceil(std::log2(m_phase_count))); // Because lsb first in Lua code
+	m_phase_pos = static_cast<unsigned int>(m_ctrl_addr.size()) - m_phase_pos - static_cast<unsigned int>(std::ceil(std::log2(m_phase_count))); // Because lsb first in Lua code
 
 	m_ucode_rom.resize(static_cast<std::size_t>(std::pow(2, m_ctrl_addr.size())), false);
 
