@@ -31,16 +31,15 @@ Engine::Engine(const std::string& script_folder) :
 }
 
 void Engine::generate() {
-	bool is_start{ false }, do_fetch{ false };
-	m_lua.set_function("exec", [&is_start, &do_fetch, this](const sol::table& cs) { lua_exec( is_start, do_fetch, true, true, true, cs); });
-	m_lua.set_function("exec_no_start", [&is_start, &do_fetch, this](const sol::table& cs) { lua_exec(is_start, do_fetch, false, true, true, cs); });
-	m_lua.set_function("exec_no_fetch", [&is_start, &do_fetch, this](const sol::table& cs) { lua_exec(is_start, do_fetch, true, false, true, cs); });
-	m_lua.set_function("exec_no_phase", [&is_start, &do_fetch, this](const sol::table& cs) { lua_exec(is_start, do_fetch, true, true, false, cs); });
+	bool do_fetch{ false };
+	m_lua.set_function("exec", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, true, true, cs); });
+	m_lua.set_function("exec_no_start", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, false, true, true, cs); });
+	m_lua.set_function("exec_no_fetch", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, false, true, cs); });
+	m_lua.set_function("exec_no_phase", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, true, false, cs); });
 
 	sol::load_result script = m_lua.load_file(m_script_folder + "/script.lua");
 
 	for (m_rom_index = 0; m_rom_index < m_ucode_rom.size(); ++m_rom_index) {
-		is_start = true;
 		m_phase = 0;
 		if (auto result = script(); !result.valid())
 			sol::script_throw_on_error(m_lua.lua_state(), result);
@@ -195,7 +194,7 @@ unsigned int Engine::get_ctrl_sequence(const std::string& lua_value) {
 	return ctrl_sequence;
 }
 
-void Engine::lua_exec(bool& is_start, bool& do_fetch, bool start_cycle, bool fetch_cycle, bool phase_inc, const sol::table& cs) {
+void Engine::lua_exec(bool& do_fetch, bool start_cycle, bool fetch_cycle, bool phase_inc, const sol::table& cs) {
 	if (m_phase >= m_ctrl_addr_count.phase)
 		throw std::runtime_error{ "Too many exec instruction: phase count is " + std::to_string(m_ctrl_addr_count.phase) };
 
@@ -216,11 +215,8 @@ void Engine::lua_exec(bool& is_start, bool& do_fetch, bool start_cycle, bool fet
 		final_cs |= i.second.as<unsigned int>();
 	}
 
-	if (start_cycle && is_start) {
+	if (start_cycle && m_phase == 0)
 		final_cs |= m_start_cycle;
-		
-		is_start = false;
-	}
 	if (phase_inc) {
 		final_cs |= m_phase_inc;
 		++m_phase;
