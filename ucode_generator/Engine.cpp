@@ -68,14 +68,17 @@ void Engine::save_hex() {
 
 		for (auto ucode_word : m_ucode_rom) {
 			hex.put(static_cast<char>((ucode_word >> (cs_idx * 8)) & 0xff));
-		}		
+		}
 		hex.close();
 	}
 }
 
 void Engine::generate_ctrl_addr() {
 	const auto flags = expect_value<std::vector<std::string>>("flags");
+	m_ctrl_addr_count.flags = static_cast<unsigned int>(flags.size());
+
 	m_ctrl_addr_count.phase = expect_value<unsigned int>("phase_count");
+
 	m_instructions = expect_value<std::vector<std::string>>("instructions");
 	m_ctrl_addr_count.opcode = static_cast<unsigned int>(m_instructions.size());
 
@@ -83,7 +86,7 @@ void Engine::generate_ctrl_addr() {
 
 	std::vector<unsigned int> already_found{};
 	m_ctrl_addr_pos.phase = 0;
-	bool phase_found{ false }, opcode_found{ false };
+	bool flags_found{ false }, phase_found{ false }, opcode_found{ false };
 	for (auto it{ std::crbegin(ctrl_addr_org) }; it != std::crend(ctrl_addr_org); ++it) { // Reverse iterator because lsb first in Lua code but msb first stored in C++
 		if (std::find(std::begin(already_found), std::end(already_found), *it) != std::end(already_found)) {
 			throw std::runtime_error{ "[setup.lua] Invalid control adress organization: cannot have multiple time the same flag" };
@@ -96,18 +99,28 @@ void Engine::generate_ctrl_addr() {
 			}
 
 			if (!phase_found)
-				m_ctrl_addr_pos.phase += static_cast<unsigned int>(flags.size());
+				m_ctrl_addr_pos.phase += m_ctrl_addr_count.flags;
 			if (!opcode_found)
-				m_ctrl_addr_pos.opcode += static_cast<unsigned int>(flags.size());
+				m_ctrl_addr_pos.opcode += m_ctrl_addr_count.flags;
+
+			flags_found = true;
 			break;
 
 		case 1: // PHASE
-			for (unsigned int phase{ 0 }; phase < num_bits(m_ctrl_addr_count.phase); ++phase) {
+		{
+			const unsigned int phase_bits = num_bits(m_ctrl_addr_count.phase);
+			for (unsigned int phase{ 0 }; phase < phase_bits; ++phase) {
 				m_ctrl_addr_names.emplace_back("p" + std::to_string(phase));
 			}
 
+			if (!flags_found)
+				m_ctrl_addr_pos.flags += phase_bits;
+			if (!opcode_found)
+				m_ctrl_addr_pos.opcode += phase_bits;
+
 			phase_found = true;
 			break;
+		}
 
 		case 2: // OPCODE
 		{
@@ -116,10 +129,10 @@ void Engine::generate_ctrl_addr() {
 				m_ctrl_addr_names.emplace_back("op" + std::to_string(opcode));
 			}
 
+			if (!flags_found)
+				m_ctrl_addr_pos.flags += opcode_bits;
 			if (!phase_found)
 				m_ctrl_addr_pos.phase += opcode_bits;
-			if (!opcode_found)
-				m_ctrl_addr_pos.opcode += opcode_bits;
 
 			opcode_found = true;
 			break;

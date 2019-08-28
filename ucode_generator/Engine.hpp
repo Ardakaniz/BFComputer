@@ -41,11 +41,13 @@ private:
 	std::vector<std::string> m_instructions;
 
 	struct {
+		unsigned int flags{ 0 };
 		unsigned int phase{ 0 };
 		unsigned int opcode{ 0 };
 	} m_ctrl_addr_pos;
 
 	struct {
+		unsigned int flags{ 0 };
 		unsigned int phase{ 0 };
 		unsigned int opcode{ 0 };
 	} m_ctrl_addr_count;
