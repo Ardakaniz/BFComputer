@@ -70,6 +70,7 @@ void Engine::generate_ctrl_addr() {
 	const auto flags = expect_value<std::vector<std::string>>("flags");
 	m_ctrl_addr_count.phase = expect_value<unsigned int>("phase_count");
 	m_instructions = expect_value<std::vector<std::string>>("instructions");
+	m_ctrl_addr_count.opcode = m_instructions.size();
 
 	const auto ctrl_addr_org = expect_value<std::vector<unsigned int>>("ctrl_addr_org");
 
