@@ -91,8 +91,8 @@ void Engine::generate_ctrl_addr() {
 
 		switch (*it) {
 		case 0: // FLAGS
-			for (const auto& flag : flags) {
-				m_ctrl_addr_names.emplace_back(flag);
+			for (auto flag_it{ std::crbegin(flags) }; flag_it != std::crend(flags); ++flag_it) {
+				m_ctrl_addr_names.emplace_back(*flag_it);
 			}
 
 			if (!phase_found)
