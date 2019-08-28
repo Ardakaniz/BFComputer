@@ -29,7 +29,7 @@ Engine::Engine(const std::string& script_folder) :
 		if (it == std::end(m_instructions))
 			throw std::runtime_error{ "Invalid instruction: " + instr };
 
-		const unsigned int opcode = std::distance(std::begin(m_instructions), it);
+		const unsigned int opcode = static_cast<unsigned int>(std::distance(std::begin(m_instructions), it));
 		const unsigned int opcode_mask = static_cast<unsigned int>(std::pow(2, num_bits(m_ctrl_addr_count.opcode))) - 1;
 		return ((m_rom_index & opcode_mask) == opcode);
 	});
@@ -77,7 +77,7 @@ void Engine::generate_ctrl_addr() {
 	const auto flags = expect_value<std::vector<std::string>>("flags");
 	m_ctrl_addr_count.phase = expect_value<unsigned int>("phase_count");
 	m_instructions = expect_value<std::vector<std::string>>("instructions");
-	m_ctrl_addr_count.opcode = m_instructions.size();
+	m_ctrl_addr_count.opcode = static_cast<unsigned int>(m_instructions.size());
 
 	const auto ctrl_addr_org = expect_value<std::vector<unsigned int>>("ctrl_addr_org");
 
@@ -111,7 +111,7 @@ void Engine::generate_ctrl_addr() {
 
 		case 2: // OPCODE
 		{
-			const unsigned int opcode_bits = num_bits(m_instructions.size());
+			const unsigned int opcode_bits = num_bits(m_ctrl_addr_count.opcode);
 			for (unsigned int opcode{ 0 }; opcode < opcode_bits; ++opcode) {
 				m_ctrl_addr_names.emplace_back("op" + std::to_string(opcode));
 			}
