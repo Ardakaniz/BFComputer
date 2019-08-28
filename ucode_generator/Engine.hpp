@@ -31,7 +31,7 @@ private:
 	static unsigned int num_bits(unsigned int num);
 
 	unsigned int m_ctrl_sigs_count{ 0 };
-	unsigned int m_phase{ 0 }, m_phase_count{ 0 }, m_phase_pos{ 0 };
+	unsigned int m_phase{ 0 };
 	unsigned int m_rom_index{ 0 };
 	unsigned int m_start_cycle{ 0 }, m_fetch_cycle{ 0 }, m_phase_inc{ 0 };
 	sol::state m_lua;
@@ -39,6 +39,16 @@ private:
 	std::unordered_map<std::string, bool> m_ctrl_addr{};
 	std::vector<unsigned int> m_ucode_rom{};
 	std::vector<std::string> m_instructions;
+
+	struct {
+		unsigned int phase{ 0 };
+		unsigned int opcode{ 0 };
+	} m_ctrl_addr_pos;
+
+	struct {
+		unsigned int phase{ 0 };
+		unsigned int opcode{ 0 };
+	} m_ctrl_addr_count;
 };
 
 #include "Engine.inl"

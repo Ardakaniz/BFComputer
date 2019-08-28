@@ -68,14 +68,14 @@ void Engine::save_hex() {
 
 void Engine::generate_ctrl_addr() {
 	const auto flags = expect_value<std::vector<std::string>>("flags");
-	m_phase_count = expect_value<unsigned int>("phase_count");
+	m_ctrl_addr_count.phase = expect_value<unsigned int>("phase_count");
 	m_instructions = expect_value<std::vector<std::string>>("instructions");
 
 	const auto ctrl_addr_org = expect_value<std::vector<unsigned int>>("ctrl_addr_org");
 
 	std::vector<unsigned int> already_found{};
-	m_phase_pos = 0;
-	bool m_phase_found{ false };
+	m_ctrl_addr_pos.phase = 0;
+	bool phase_found{ false }, opcode_found{ false };
 	for (auto i : ctrl_addr_org) {
 		if (std::find(std::begin(already_found), std::end(already_found), i) != std::end(already_found)) {
 			throw std::runtime_error{ "[setup.lua] Invalid control adress organization: cannot have multiple time the same flag" };
@@ -87,16 +87,18 @@ void Engine::generate_ctrl_addr() {
 				m_ctrl_addr[flag] = false;
 			}
 
-			if (!m_phase_found)
-				m_phase_pos += static_cast<unsigned int>(flags.size());
+			if (!phase_found)
+				m_ctrl_addr_pos.phase += static_cast<unsigned int>(flags.size());
+			if (!opcode_found)
+				m_ctrl_addr_pos.opcode += static_cast<unsigned int>(flags.size());
 			break;
 
 		case 1: // PHASE
-			for (unsigned int phase{ 0 }; phase < num_bits(m_phase_count); ++phase) {
+			for (unsigned int phase{ 0 }; phase < num_bits(m_ctrl_addr_count.phase); ++phase) {
 				m_ctrl_addr["p" + std::to_string(phase)] = false;
 			}
 
-			m_phase_found = true;
+			phase_found = true;
 			break;
 
 		case 2: // OPCODE
@@ -106,10 +108,14 @@ void Engine::generate_ctrl_addr() {
 				m_ctrl_addr["op" + std::to_string(opcode)] = false;
 			}
 
-			if (!m_phase_found)
-				m_phase_pos += opcode_bits;
-		}
+			if (!phase_found)
+				m_ctrl_addr_pos.phase += opcode_bits;
+			if (!opcode_found)
+				m_ctrl_addr_pos.opcode += opcode_bits;
+
+			opcode_found = true;
 			break;
+		}
 
 		default:
 			throw std::runtime_error{ "[setup.lua] Invalid control adress organization flag" };
@@ -121,7 +127,9 @@ void Engine::generate_ctrl_addr() {
 	if (already_found.size() != 3)
 		throw std::runtime_error{ "[setup.lua] Invalid control adress organization: FLAGS, PHASE or OPCODE is missing" };
 
-	m_phase_pos = static_cast<unsigned int>(m_ctrl_addr.size()) - m_phase_pos - num_bits(m_phase_count); // Because lsb first in Lua code
+	// Because lsb first in Lua code
+	m_ctrl_addr_pos.phase = static_cast<unsigned int>(m_ctrl_addr.size()) - m_ctrl_addr_pos.phase - num_bits(m_ctrl_addr_count.phase);
+	m_ctrl_addr_pos.opcode = static_cast<unsigned int>(m_ctrl_addr.size()) - m_ctrl_addr_pos.opcode - num_bits(m_ctrl_addr_count.opcode);
 
 	m_ucode_rom.resize(static_cast<std::size_t>(std::pow(2, m_ctrl_addr.size())), false);
 
@@ -187,11 +195,11 @@ unsigned int Engine::get_ctrl_sequence(const std::string& lua_value) {
 }
 
 void Engine::lua_exec(bool& is_start, bool& do_fetch, bool start_cycle, bool fetch_cycle, bool phase_inc, const sol::table& cs) {
-	if (m_phase >= m_phase_count)
-		throw std::runtime_error{ "Too many exec instruction: phase count is " + std::to_string(m_phase_count) };
+	if (m_phase >= m_ctrl_addr_count.phase)
+		throw std::runtime_error{ "Too many exec instruction: phase count is " + std::to_string(m_ctrl_addr_count.phase) };
 
-	const unsigned int phase_mask = (static_cast<unsigned int>(std::pow(2, num_bits(m_phase_count))) - 1);
-	if (((m_rom_index >> m_phase_pos) & phase_mask) != m_phase) { // Not the right phase, we don't exec anything
+	const unsigned int phase_mask = (static_cast<unsigned int>(std::pow(2, num_bits(m_ctrl_addr_count.phase))) - 1);
+	if (((m_rom_index >> m_ctrl_addr_pos.phase) & phase_mask) != m_phase) { // Not the right phase, we don't exec anything
 		do_fetch = false;
 		if (phase_inc)
 			++m_phase;
