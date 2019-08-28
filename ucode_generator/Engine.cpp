@@ -69,7 +69,7 @@ void Engine::save_hex() {
 void Engine::generate_ctrl_addr() {
 	const auto flags = expect_value<std::vector<std::string>>("flags");
 	m_phase_count = expect_value<unsigned int>("phase_count");
-	const auto instructions = expect_value<std::vector<std::string>>("instructions");
+	m_instructions = expect_value<std::vector<std::string>>("instructions");
 
 	const auto ctrl_addr_org = expect_value<std::vector<unsigned int>>("ctrl_addr_org");
 
@@ -92,7 +92,7 @@ void Engine::generate_ctrl_addr() {
 			break;
 
 		case 1: // PHASE
-			for (unsigned int phase{ 0 }; phase < static_cast<unsigned int>(std::ceil(std::log2(m_phase_count))); ++phase) {
+			for (unsigned int phase{ 0 }; phase < num_bits(m_phase_count); ++phase) {
 				m_ctrl_addr["p" + std::to_string(phase)] = false;
 			}
 
@@ -101,7 +101,7 @@ void Engine::generate_ctrl_addr() {
 
 		case 2: // OPCODE
 		{
-			const unsigned int opcode_bits = static_cast<unsigned int>(std::ceil(std::log2(instructions.size())));
+			const unsigned int opcode_bits = num_bits(m_instructions.size());
 			for (unsigned int opcode{ 0 }; opcode < opcode_bits; ++opcode) {
 				m_ctrl_addr["op" + std::to_string(opcode)] = false;
 			}
@@ -121,7 +121,7 @@ void Engine::generate_ctrl_addr() {
 	if (already_found.size() != 3)
 		throw std::runtime_error{ "[setup.lua] Invalid control adress organization: FLAGS, PHASE or OPCODE is missing" };
 
-	m_phase_pos = static_cast<unsigned int>(m_ctrl_addr.size()) - m_phase_pos - static_cast<unsigned int>(std::ceil(std::log2(m_phase_count))); // Because lsb first in Lua code
+	m_phase_pos = static_cast<unsigned int>(m_ctrl_addr.size()) - m_phase_pos - num_bits(m_phase_count); // Because lsb first in Lua code
 
 	m_ucode_rom.resize(static_cast<std::size_t>(std::pow(2, m_ctrl_addr.size())), false);
 
@@ -190,7 +190,7 @@ void Engine::lua_exec(bool& is_start, bool& do_fetch, bool start_cycle, bool fet
 	if (m_phase >= m_phase_count)
 		throw std::runtime_error{ "Too many exec instruction: phase count is " + std::to_string(m_phase_count) };
 
-	const unsigned int phase_mask = (static_cast<unsigned int>(std::pow(2, std::ceil(std::log2(m_phase_count)))) - 1);
+	const unsigned int phase_mask = (static_cast<unsigned int>(std::pow(2, num_bits(m_phase_count))) - 1);
 	if (((m_rom_index >> m_phase_pos) & phase_mask) != m_phase) { // Not the right phase, we don't exec anything
 		do_fetch = false;
 		if (phase_inc)
@@ -220,4 +220,8 @@ void Engine::lua_exec(bool& is_start, bool& do_fetch, bool start_cycle, bool fet
 	m_ucode_rom[m_rom_index] = final_cs;
 
 	do_fetch = fetch_cycle;
+}
+
+unsigned int Engine::num_bits(unsigned int num) {
+	return static_cast<unsigned int>(std::ceil(std::log2(num)));
 }

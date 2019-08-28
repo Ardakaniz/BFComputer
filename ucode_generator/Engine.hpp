@@ -28,6 +28,8 @@ private:
 	template<typename T> void update_lua_table(const std::vector<std::string>& path, T value);
 	template<typename T> T expect_value(const std::string& name);
 
+	static unsigned int num_bits(unsigned int num);
+
 	unsigned int m_ctrl_sigs_count{ 0 };
 	unsigned int m_phase{ 0 }, m_phase_count{ 0 }, m_phase_pos{ 0 };
 	unsigned int m_rom_index{ 0 };
@@ -36,6 +38,7 @@ private:
 	std::string m_script_folder{};
 	std::unordered_map<std::string, bool> m_ctrl_addr{};
 	std::vector<unsigned int> m_ucode_rom{};
+	std::vector<std::string> m_instructions;
 };
 
 #include "Engine.inl"
