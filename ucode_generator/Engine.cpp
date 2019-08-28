@@ -84,12 +84,12 @@ void Engine::generate_ctrl_addr() {
 	std::vector<unsigned int> already_found{};
 	m_ctrl_addr_pos.phase = 0;
 	bool phase_found{ false }, opcode_found{ false };
-	for (auto i : ctrl_addr_org) {
-		if (std::find(std::begin(already_found), std::end(already_found), i) != std::end(already_found)) {
+	for (auto it{ std::crbegin(ctrl_addr_org) }; it != std::crend(ctrl_addr_org); ++it) { // Reverse iterator because lsb first in Lua code but msb first stored in C++
+		if (std::find(std::begin(already_found), std::end(already_found), *it) != std::end(already_found)) {
 			throw std::runtime_error{ "[setup.lua] Invalid control adress organization: cannot have multiple time the same flag" };
 		}
 
-		switch (i) {
+		switch (*it) {
 		case 0: // FLAGS
 			for (const auto& flag : flags) {
 				m_ctrl_addr_names.emplace_back(flag);
@@ -129,15 +129,11 @@ void Engine::generate_ctrl_addr() {
 			throw std::runtime_error{ "[setup.lua] Invalid control adress organization flag" };
 		}
 
-		already_found.push_back(i);
+		already_found.push_back(*it);
 	}
 
 	if (already_found.size() != 3)
 		throw std::runtime_error{ "[setup.lua] Invalid control adress organization: FLAGS, PHASE or OPCODE is missing" };
-
-	// Because lsb first in Lua code
-	m_ctrl_addr_pos.phase = static_cast<unsigned int>(m_ctrl_addr_names.size()) - m_ctrl_addr_pos.phase - num_bits(m_ctrl_addr_count.phase);
-	m_ctrl_addr_pos.opcode = static_cast<unsigned int>(m_ctrl_addr_names.size()) - m_ctrl_addr_pos.opcode - num_bits(m_ctrl_addr_count.opcode);
 
 	m_ucode_rom.resize(static_cast<std::size_t>(std::pow(2, m_ctrl_addr_names.size())), false);
 }
@@ -157,7 +153,7 @@ void Engine::generate_ctrl_sigs() {
 
 void Engine::update_ctrl_addr() {
 	for (unsigned int i{ 0 }; i < m_ctrl_addr_names.size(); ++i) {
-		m_lua[m_ctrl_addr_names[i]] = static_cast<bool>((m_rom_index >> (m_ctrl_addr_names.size() - i - 1)) & 1);
+		m_lua[m_ctrl_addr_names[i]] = static_cast<bool>((m_rom_index >> i) & 1);
 	}
 }
 
