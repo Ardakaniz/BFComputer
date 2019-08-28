@@ -23,11 +23,17 @@ Engine::Engine(const std::string& script_folder) :
 	generate_ctrl_sigs();
 	
 
-	m_lua.set_function("is_opcode", [](const std::string& opcode) {
-		return true;
+	m_lua.set_function("is_opcode", [this](const std::string& instr) {
+		auto it = std::find(std::begin(m_instructions), std::end(m_instructions), instr);
+
+		if (it == std::end(m_instructions))
+			throw std::runtime_error{ "Invalid instruction: " + instr };
+
+		const unsigned int opcode = std::distance(std::begin(m_instructions), it);
+		const unsigned int opcode_mask = static_cast<unsigned int>(std::pow(2, num_bits(m_ctrl_addr_count.opcode))) - 1;
+		return ((m_rom_index & opcode_mask) == opcode);
 	});
 
-	
 }
 
 void Engine::generate() {
