@@ -36,7 +36,7 @@ private:
 	unsigned int m_start_cycle{ 0 }, m_fetch_cycle{ 0 }, m_phase_inc{ 0 };
 	sol::state m_lua;
 	std::string m_script_folder{};
-	std::unordered_map<std::string, bool> m_ctrl_addr{};
+	std::vector<std::string> m_ctrl_addr_names{};
 	std::vector<unsigned int> m_ucode_rom{};
 	std::vector<std::string> m_instructions;
 

@@ -46,6 +46,8 @@ void Engine::generate() {
 	sol::load_result script = m_lua.load_file(m_script_folder + "/script.lua");
 
 	for (m_rom_index = 0; m_rom_index < m_ucode_rom.size(); ++m_rom_index) {
+		update_ctrl_addr();
+
 		m_phase = 0;
 		if (auto result = script(); !result.valid())
 			sol::script_throw_on_error(m_lua.lua_state(), result);
@@ -90,7 +92,7 @@ void Engine::generate_ctrl_addr() {
 		switch (i) {
 		case 0: // FLAGS
 			for (const auto& flag : flags) {
-				m_ctrl_addr[flag] = false;
+				m_ctrl_addr_names.emplace_back(flag);
 			}
 
 			if (!phase_found)
@@ -101,7 +103,7 @@ void Engine::generate_ctrl_addr() {
 
 		case 1: // PHASE
 			for (unsigned int phase{ 0 }; phase < num_bits(m_ctrl_addr_count.phase); ++phase) {
-				m_ctrl_addr["p" + std::to_string(phase)] = false;
+				m_ctrl_addr_names.emplace_back("p" + std::to_string(phase));
 			}
 
 			phase_found = true;
@@ -111,7 +113,7 @@ void Engine::generate_ctrl_addr() {
 		{
 			const unsigned int opcode_bits = num_bits(m_instructions.size());
 			for (unsigned int opcode{ 0 }; opcode < opcode_bits; ++opcode) {
-				m_ctrl_addr["op" + std::to_string(opcode)] = false;
+				m_ctrl_addr_names.emplace_back("op" + std::to_string(opcode));
 			}
 
 			if (!phase_found)
@@ -134,12 +136,10 @@ void Engine::generate_ctrl_addr() {
 		throw std::runtime_error{ "[setup.lua] Invalid control adress organization: FLAGS, PHASE or OPCODE is missing" };
 
 	// Because lsb first in Lua code
-	m_ctrl_addr_pos.phase = static_cast<unsigned int>(m_ctrl_addr.size()) - m_ctrl_addr_pos.phase - num_bits(m_ctrl_addr_count.phase);
-	m_ctrl_addr_pos.opcode = static_cast<unsigned int>(m_ctrl_addr.size()) - m_ctrl_addr_pos.opcode - num_bits(m_ctrl_addr_count.opcode);
+	m_ctrl_addr_pos.phase = static_cast<unsigned int>(m_ctrl_addr_names.size()) - m_ctrl_addr_pos.phase - num_bits(m_ctrl_addr_count.phase);
+	m_ctrl_addr_pos.opcode = static_cast<unsigned int>(m_ctrl_addr_names.size()) - m_ctrl_addr_pos.opcode - num_bits(m_ctrl_addr_count.opcode);
 
-	m_ucode_rom.resize(static_cast<std::size_t>(std::pow(2, m_ctrl_addr.size())), false);
-
-	update_ctrl_addr();
+	m_ucode_rom.resize(static_cast<std::size_t>(std::pow(2, m_ctrl_addr_names.size())), false);
 }
 
 void Engine::generate_ctrl_sigs() {
@@ -156,8 +156,8 @@ void Engine::generate_ctrl_sigs() {
 }
 
 void Engine::update_ctrl_addr() {
-	for (const auto& i : m_ctrl_addr) {
-		m_lua[i.first] = i.second;
+	for (unsigned int i{ 0 }; i < m_ctrl_addr_names.size(); ++i) {
+		m_lua[m_ctrl_addr_names[i]] = static_cast<bool>((m_rom_index >> (m_ctrl_addr_names.size() - i - 1)) & 1);
 	}
 }
 
