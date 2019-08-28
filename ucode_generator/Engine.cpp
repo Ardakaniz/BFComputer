@@ -201,32 +201,30 @@ void Engine::lua_exec(bool& do_fetch, bool start_cycle, bool fetch_cycle, bool p
 		throw std::runtime_error{ "Too many exec instruction: phase count is " + std::to_string(m_ctrl_addr_count.phase) };
 
 	const unsigned int phase_mask = (static_cast<unsigned int>(std::pow(2, num_bits(m_ctrl_addr_count.phase))) - 1);
-	if (((m_rom_index >> m_ctrl_addr_pos.phase) & phase_mask) != m_phase) { // Not the right phase, we don't exec anything
+	if (((m_rom_index >> m_ctrl_addr_pos.phase) & phase_mask) == m_phase) {
 		do_fetch = false;
+
+		unsigned int final_cs = 0;
+		for (auto i : cs) {
+			if (i.second.get_type() != sol::type::number)
+				throw std::runtime_error{ "[script.lua] exec(): Invalid arguments, expected control signal flag" };
+
+			final_cs |= i.second.as<unsigned int>();
+		}
+
+		if (start_cycle && m_phase == 0)
+			final_cs |= m_start_cycle;
 		if (phase_inc)
-			++m_phase;
+			final_cs |= m_phase_inc;
 
-		return;
+		m_ucode_rom[m_rom_index] = final_cs;
+		do_fetch = fetch_cycle;
 	}
-	
-	unsigned int final_cs = 0;
-	for (auto i : cs) {
-		if (i.second.get_type() != sol::type::number)
-			throw std::runtime_error{ "[script.lua] exec(): Invalid arguments, expected control signal flag" };
+	else
+		do_fetch = false;
 
-		final_cs |= i.second.as<unsigned int>();
-	}
-
-	if (start_cycle && m_phase == 0)
-		final_cs |= m_start_cycle;
-	if (phase_inc) {
-		final_cs |= m_phase_inc;
+	if (phase_inc)
 		++m_phase;
-	}
-
-	m_ucode_rom[m_rom_index] = final_cs;
-
-	do_fetch = fetch_cycle;
 }
 
 unsigned int Engine::num_bits(unsigned int num) {
