@@ -38,22 +38,28 @@ Engine::Engine(const std::string& script_folder) :
 
 void Engine::generate() {
 	bool do_fetch{ false };
-	m_lua.set_function("exec", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, true, true, cs); });
+	m_lua.set_function("exec",          [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, true, true, cs); });
 	m_lua.set_function("exec_no_start", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, false, true, true, cs); });
 	m_lua.set_function("exec_no_fetch", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, false, true, cs); });
 	m_lua.set_function("exec_no_phase", [&do_fetch, this](const sol::table& cs) { lua_exec(do_fetch, true, true, false, cs); });
+
+	m_lua.set_function("check_flag", &Engine::lua_check_flag, this);
+
 
 	sol::load_result script = m_lua.load_file(m_script_folder + "/script.lua");
 
 	for (m_rom_index = 0; m_rom_index < m_ucode_rom.size(); ++m_rom_index) {
 		update_ctrl_addr();
 
+		m_block_lua_exec = false;
 		m_phase = 0;
 		if (auto result = script(); !result.valid())
 			sol::script_throw_on_error(m_lua.lua_state(), result);
 
-		if (do_fetch)
-			m_ucode_rom[m_rom_index] |= m_fetch_cycle;
+		if (do_fetch) {
+			for (auto to_fetch : m_addr_to_fetch)
+				m_ucode_rom[to_fetch] |= m_fetch_cycle;
+		}
 	}
 }
 
@@ -210,8 +216,13 @@ unsigned int Engine::get_ctrl_sequence(const std::string& lua_value) {
 }
 
 void Engine::lua_exec(bool& do_fetch, bool start_cycle, bool fetch_cycle, bool phase_inc, const sol::table& cs) {
+	if (m_block_lua_exec)
+		throw std::runtime_error{ "[script.lua] Cannot use exec function after using check_flag" };
+
+	m_addr_to_fetch.clear();
+
 	if (m_phase >= m_ctrl_addr_count.phase)
-		throw std::runtime_error{ "Too many exec instruction: phase count is " + std::to_string(m_ctrl_addr_count.phase) };
+		throw std::runtime_error{ "[script.lua] Too many exec instruction: phase count is " + std::to_string(m_ctrl_addr_count.phase) };
 
 	const unsigned int phase_mask = (static_cast<unsigned int>(std::pow(2, num_bits(m_ctrl_addr_count.phase))) - 1);
 	if (((m_rom_index >> m_ctrl_addr_pos.phase) & phase_mask) == m_phase) {
@@ -231,6 +242,7 @@ void Engine::lua_exec(bool& do_fetch, bool start_cycle, bool fetch_cycle, bool p
 			final_cs |= m_phase_inc;
 
 		m_ucode_rom[m_rom_index] = final_cs;
+		m_addr_to_fetch.push_back(m_rom_index);
 		do_fetch = fetch_cycle;
 	}
 	else
@@ -238,6 +250,35 @@ void Engine::lua_exec(bool& do_fetch, bool start_cycle, bool fetch_cycle, bool p
 
 	if (phase_inc)
 		++m_phase;
+}
+
+void Engine::lua_check_flag(const std::string& flag, const std::function<void()>& cs_if, const std::function<void()>& cs_else) {
+	auto flag_it = std::find(std::begin(m_ctrl_addr_names), std::end(m_ctrl_addr_names), flag);
+	if (flag_it == std::end(m_ctrl_addr_names))
+		throw std::runtime_error{ "[script.lua] exec_if(): Unknown flag argument: " + flag };
+
+	const unsigned int flag_idx = static_cast<unsigned int>(std::distance(std::begin(m_ctrl_addr_names), flag_it));
+	
+	const unsigned int rom_index_if   = m_rom_index | (1 << flag_idx);
+	const unsigned int rom_index_else = m_rom_index & ~(1 << flag_idx);
+
+	const unsigned int rom_index_backup{ m_rom_index };
+	const unsigned int phase_backup{ m_phase };
+
+	m_rom_index = rom_index_if;
+	cs_if();
+	m_phase = phase_backup;
+
+	const std::vector<unsigned int> addr_to_fetch{ m_addr_to_fetch };
+	
+	m_rom_index = rom_index_else;
+	cs_else();
+
+	m_rom_index = rom_index_backup;
+
+	m_addr_to_fetch.insert(std::end(m_addr_to_fetch), std::begin(addr_to_fetch), std::end(addr_to_fetch));
+
+	m_block_lua_exec = true;
 }
 
 unsigned int Engine::num_bits(unsigned int num) {
