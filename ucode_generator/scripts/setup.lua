@@ -5,9 +5,9 @@ instructions = { "+", "-", ">", "<", "[", "]", ".", "," }
 ctrl_addr_org = { FLAGS, PHASE, OPCODE }
 
 ctrl_sigs = {
-	"FLAGS.SLS",
-	"FLAGS.ELS",
-	"FLAGS.LSR",
+	"FLAGS.SLT",
+	"FLAGS.ELT",
+	"FLAGS.ACT",
 	"FLAGS.BZL",
 	"PHASE.CO",
 	"PHASE.RESET",
