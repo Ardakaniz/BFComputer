@@ -26,7 +26,8 @@ De plus, pour optimiser un peu le tout chaque instruction de boucle va être sto
 L’architecture peut être décomposée en deux parties : la *logique de contrôle*,  qui permet de décoder l’instruction courante et de l’exécuter ; ainsi que la *logique de calcul*, qui contient les mémoires, la RAM, l’ALU et les entrées/sorties. Mais avant tout, parlons de l’horloge principale de l’ordinateur.
 
 ### L’horloge
-L’horloge est globalement la même que celle de l’ordinateur 8-bits de Ben Eater à l’exception qu’il n’est pas possible de régler sa vitesse. Il y a donc deux modes : un mode manuel – permettant de debug – contrôlé par un bouton avec un circuit de debounce à base de timer 555 ; ainsi qu’un mode normal utilisant un timer 555 en astable à une fréquence de X MHz. De plus, il n’y a pas de signal de contrôle permettant de stopper l’horloge, cela sera fait en créant une boucle infinie dans le code.
+L’horloge est basée sur un oscillateur à 4MHz. Cependant, elle possède deux modes : un mode manuel – permettant de debug – contrôlé par un bouton ; ainsi qu’un mode normal utilisant cet oscillateur.
+De plus, il n’y a pas de signal de contrôle permettant de stopper l’horloge, cela pouvait être fait en créant une boucle infinie dans le code: `[-]+[]`.
 
 ### La logique de calcul
 #### Les registres
@@ -44,7 +45,7 @@ Le `LAR` et le `MAR` sont reliés via un multiplexer au bus d’adresse de la m�
 Tous les registres de cet ordinateur sont basés sur un circuit intégré de type 74LS169 avec trois différents signaux de contrôles :
 - **CO** : permet d’activer le comptage, décrémentation par défaut
 - **UP** : permet d’incrémenter lors d’un comptage
-- **LO**/**RESET** : permet de mettre une valeur dans le registre. Cette valeur étant 0 lorsque le signal est dénommé RESET
+- **LO**/**RST** : permet de mettre une valeur dans le registre. Cette valeur étant zéro lorsque le signal est dénommé RST
 
 #### L’ALU
 L’`ALU` n’est en réalité rien d’autre que un registre relié au bus de données et permet d’incrémenter ou décrémenter sa valeur interne. À des fins d’optimisation, la valeur en RAM y est stocké que lorsque nous cherchons à changer sa valeur. De même, sa valeur est retournée en RAM seulement si il y a eu modification et que lorsque l’on modifie le curseur mémoire.
@@ -103,16 +104,26 @@ La ROM qui contient le programme à exécuter. Son contenu peut être changé vi
 Registre de 2-bit qui bascule entre zéro et potentiellement quatre pour les instructions nécessitant plusieurs cycles d’horloge, cependant, seulement trois cycles sont utiles pour éxécuter n’importe quel instruction.
 
 ##### Zero Checker 
-Permet d’indiquer à l’ordinateur quand le LPC est à zéro.
+Ce composant permet d’indiquer à l’ordinateur quand la valeur du `LPC` ou celle du bus de données est nulle.
 
 ##### Flag Register
-Registre de flag indiquant certains états interne de l’ordinateur.
+Ce type de registre indique certains états interne de l’ordinateur.
 Voici une description de chaque flag :
-- **`SLF`** : permet d’indiquer à l’ordinateur que nous sommes à la recherche du début d’une boucle, soit à une instruction BF ‘[‘
-- **`ELF`** : inversement, permet d’indiquer que nous cherchons la fin d’une boucle, soit ‘]’
+- **`SLF`** : permet d’indiquer à l’ordinateur que nous sommes à la recherche du début d’une boucle, soit à une instruction BF '['
+- **`ELF`** : inversement, permet d’indiquer que nous cherchons la fin d’une boucle, soit ']'
 - **`ACF`** : permet d’indiquer quand la valeur de l’ALU a été changé et donc s’il est nécessaire de mettre à jour la valeur de l’ALU ou de la cellule en RAM
-- **`BZF`** : permet d’indiquer à l’ordinateur si la valeur du bus est à zéro. Nécessite un signal de contrôle car ce flag est en réalité stocké dans un registre
-- **`RF`** : permet d’indiquer à l’ordinateur que nous sommes en phase de (ré)initialisation. Il est activé lors de l’appuie d’un bouton et est réintialisé lorsque la valeur du `MAR` est à sa valeur max `0xFFF`
+- **`BZF`** : permet d’indiquer à l’ordinateur si la valeur du bus est à zéro.
+- **`RF`** : permet d’indiquer à l’ordinateur que nous sommes en phase de (ré)initialisation.
+
+De plus, ce registre possède des signaux de contrôles propres à lui permettant de manipuler ces flags :
+- **SLT** : permet de basculer l'état du flag `SLF` de actif à non-actif
+- **ELT** : permet de basculer l'état du flag `ELF` de actif à non-actif
+- **ACT** : permet de basculer l'état du flag `ACF` de actif à non-actif
+- **BZL** : permet de stocker l'état de la valeur du bus (nulle ou pas) afin de pouvoir utiliser le flag `BZF`
+
+Il existe aussi deux autres signaux de contrôles n'étant pas accessible via la micro-instruction à propos du flag `RF` 
+- **RFS** : permet d'activer ce flag, lors de l'appuie d'un bouton
+- **RFR** : permet de désactiver ce flag, lorsque la valeur du `MAR` est à sa valeur maximale (`4095`)
 
 
 ### Les séquences d’instruction
@@ -123,9 +134,9 @@ Le « Fetch Cycle » est l’opération qui consiste à récupérer l’instru
 #### La réinitialisation de l’ordinateur
 
 La réinitialisation de l’ordinateur (qui est aussi son initialisation) consiste à mettre tous les registres ainsi que le contenu de la RAM à zéro. Cela consiste à trois étapes distinctes :
-1. Initialiser PC-MAR-Phase-Flag-LPC à 0 via LOAD => à l’appuie du bouton de reset.
-2. PC → LAR & Bus → RAM
-3.  Incrémenter MAR jusqu’à la valeur max (4095) où le RF est réinitialisé
+1. Activer le signal de contrôle `RST` pour les registres `PC`, `MAR`, `LPC` ainsi que `Phase` et `Flag` à l'appuie du bouton de reset
+2. Mettre la valeur du registre `PC` dans celui `LAR` ainsi que celle du bus dans la `RAM`
+3. Incrémenter le registre `MAR` jusqu’à la valeur maximale (`4095`) où le flag `RF` est réinitialisé
 
 #### La gestion des boucles
 
@@ -133,4 +144,4 @@ sdfdsqgfdsf
 
 
 
-> /!\ Cette gestion possède une limitation: le code BF ne peut pas commencer par une boucle dès la première instruction, pour cela il faut utiliser comme instruction en premier lieu `><`
+> /!\ Cette gestion possède une limitation: le code BF ne peut pas commencer par une boucle dès la première instruction, pour cela il faut utiliser comme instruction en premier lieu `><` ou `<>`
