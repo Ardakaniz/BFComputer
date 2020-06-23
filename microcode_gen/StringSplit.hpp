@@ -14,7 +14,7 @@ std::istream& operator>>(std::istream& is, Splitter<delimiter>& output) {
 }
 
 template<char delimiter>
-std::vector<std::string> string_split(const std::string& str) {
+std::vector<std::string> StringSplit(const std::string& str) {
 	std::istringstream iss{ str };
 
 	return std::vector<std::string>(std::istream_iterator<Splitter<delimiter>>(iss),
