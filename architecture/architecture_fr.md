@@ -1,23 +1,4 @@
-# BFComputer Specifications
-
-BFComputer – abrégé BFCom, ou BFC – est un ordinateur 12-bits fonctionnant avec le langage hétéroclite Brainf*ck en guise de langage d’assembleur. Ainsi, il ne comprend que huit instructions basiques qui sont détaillés maintenant.
-
-## Le Brainf*ck et les instructions
-
-Le Brainf*ck est donc composé de huit instructions élémentaires permettant de manipuler une mémoire, effectuer des boucles et interagir avec des entrées/sorties.
-
-| Instruction | Description                                              |
-| :---------: | -------------------------------------------------------- |
-|    **+**    | Incrémente la valeur de la cellule courante              |
-|    **-**    | Décrémente la valeur de la cellule courante              |
-|    **>**    | Incrémente le curseur de la mémoire                      |
-|    **<**    | Décrémente le curseur de la mémoire                      |
-|    **[**    | Début d’une boucle : y rentre si la valeur est non nulle |
-|    **]**    | Fin d’une boucle : y sort si la valeur est nulle         |
-|    **.**    | Envoie la valeur de la cellule courante à la sortie      |
-|    **,**    | Écrit la valeur de l’entrée dans la cellule courante     |
-
-## L’architecture de l’ordinateur
+# L’architecture de l’ordinateur
 
 L’ordinateur doit donc avoir une architecture spécifique pour interpréter ce jeu d’instruction réduit. L’ALU – Arithmetic and Logic Unit – est assez simple car il se résume à incrémenter ou décrémenter la valeur des registres.  
 Cependant, ce qui complexifie la tâche est la gestion des boucles. Dans un langage d’assembleur normal, il n’existe pas de boucle à proprement parlé mais des ‘sauts’ avec ainsi l’adresse d’arrivée indiquée dans l’instruction. Ici le challenge a été de trouver un mécanisme permettant à l’ordinateur d’aller chercher le début ou la fin de la boucle correspondante -- non connue d'avance sauf éventuellement en rajoutant des données aux instructions mais le but était vraiment que l'ordinateur puisse comprendre un code BF brut.    
@@ -25,11 +6,11 @@ De plus, chaque instruction de boucle va être stocké dans une mémoire cache p
 
 L’architecture peut être décomposée en deux parties : la *logique de contrôle*,  qui permet de décoder l’instruction courante et de l’exécuter ; ainsi que la *logique de calcul*, qui contient les mémoires, la RAM, l’ALU et les entrées/sorties. Mais avant tout, parlons de l’horloge principale de l’ordinateur.
 
-### L’horloge
+## L’horloge
 Elle comporte deux modes : un mode manuel – permettant de debug – contrôlé par un bouton avec un circuit de debounce à base de timer 555 ; ainsi qu’un mode normal utilisant une oscillateur à quartz à une fréquence de 10 kHz.   
 De plus, il n’y a pas de signal de contrôle permettant de stopper l’horloge, cela sera fait en créant une boucle infinie dans le code.
 
-### La logique de calcul
+## La logique de calcul
 #### Les registres
 
 L’ordinateur est constitué de quatre registres :
@@ -77,7 +58,7 @@ Il y a deux seuls moyens d’y mettre une valeur : soit par la sortie de la RAM
 Les "Zero Checkers" permettent de vérifier si une valeur est nulle ou pas.   
 L’ordinateur en possède deux : un pour la valeur du bus, son résultat étant enregistré dans un registre de flag quand nécessaire et un deuxième pour la valeur du `LPC`, son résultat étant directement utilisé pour déterminer la micro-instruction.
 
-### La logique de contrôle
+## La logique de contrôle
 La logique de contrôle réunit tous les éléments nécessaire à la détermination des opérations que la logique de calcul doit effectuer.   
 Nous avons donc pour cela une ROM principale avec 1k cellules de 25 bits. 1k cellules, soit 10 bits, correspondent à quatre éléments résumé dans le tableau ci dessous :
 
@@ -97,13 +78,13 @@ Nous avons donc pour cela une ROM principale avec 1k cellules de 25 bits. 1k cel
 
 Voici une brève explication de chaque élément :
 
-##### Program ROM
+#### Program ROM
 La ROM qui contient le programme à exécuter. Son contenu peut être changé via le programmateur de ROM dont une partie de ce projet est aussi dédié. Les instructions défilent suivant la valeur du PC.
 
-##### Phase
+#### Phase
 Registre de 2-bit qui bascule entre les valeurs 0b00 et 0b10 pour les instructions nécessitant plusieurs cycles d’horloge : au maximum trois cycles sont utiles pour éxécuter n’importe quelle instruction.
 
-##### Flag Register
+#### Flag Register
 Registre de flag indiquant certains états interne de l’ordinateur.
 Voici une description de chaque flag :
 - **`SLF`** : permet d’indiquer à l’ordinateur que nous sommes à la recherche du début d’une boucle, soit à une instruction BF '['
@@ -112,10 +93,10 @@ Voici une description de chaque flag :
 - **`BZF`** : permet d’indiquer à l’ordinateur si la valeur du bus est à zéro. Nécessite un signal de contrôle car ce flag est en réalité stocké dans un registre
 - **`RF`** : permet d’indiquer à l’ordinateur que nous sommes en phase de (ré)initialisation. Il est activé lors de l’appuie d’un bouton et est réintialisé lorsque la valeur du `MAR` est à sa valeur max `0xFFF` (< TODO: Revoir ce fonctionnement, système plutôt chaotique sur Logisim pour réussir à le faire fonctionner correctement...)
 
-##### Zero Checker 
+#### Zero Checker 
 Permet d’indiquer à l’ordinateur quand le LPC est à zéro. (Réalisé à partir de portes ET and d'un inverseur à la toute fin)
 
-### Les séquences d’instruction
+## Les séquences d’instruction
 #### Fetch Cycle
 
 Le « Fetch Cycle » est l’opération qui consiste à récupérer l’instruction suivante dans le but de la décoder puis l’exécuter. Elle est donc réalisée après chaque instruction et consiste à réinitialiser la phase, et incrémenter le `PC`.
