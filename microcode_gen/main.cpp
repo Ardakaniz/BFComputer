@@ -1,5 +1,6 @@
 #include "Engine.hpp"
 #include <iostream>
+#include <string>
 
 int main(int argc, char* argv[]) {
 	std::string script_file{ "script.lua" };
@@ -16,7 +17,7 @@ int main(int argc, char* argv[]) {
 		Engine engine{ script_file };
 		engine.Generate();
 
-		if (!save_txt) {
+		if (save_txt) {
 			engine.SaveTxt();
 			std::cout << "Saving txt format" << std::endl;
 		}
