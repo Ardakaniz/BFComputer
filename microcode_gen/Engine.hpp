@@ -2,7 +2,6 @@
 
 #define SOL_ALL_SAFETIES_ON 1
 #define SOL_PRINT_ERRORS 0
-#include <dynamic_bitset/dynamic_bitset.hpp>
 #include <lua/lua.hpp>
 #include <sol/sol.hpp>
 
@@ -17,8 +16,6 @@ public:
 	void SaveTxt();
 
 private:
-	using Bitset = dynamic_bitset<unsigned int>;
-
 	template<typename T> void UpdateLuaTable(const std::vector<std::string>& path, T value);
 	inline unsigned int MsbPos(unsigned int val) const;
 
