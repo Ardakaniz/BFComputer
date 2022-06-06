@@ -24,7 +24,7 @@ architecture RTL of reg is
 	signal output_sig : integer range 0 to MAX_VALUE;
 
 begin
-	process (CLK)
+	process (CLK) is
 	begin
 		if (rising_edge(CLK)) then
 			if (LO = '0') then
