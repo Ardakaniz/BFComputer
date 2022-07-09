@@ -9,7 +9,7 @@ Turns on an the first LED for approx X clock cycles then off the first one but o
 
 [ Main loop
 	[
-		>++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++< Keep for X clock cycles
+		>++++++++++----------< Keep for X clock cycles
 		[->+>+<<]>[-<+>]>[-<<+>>]<<. Double the cell value to now drive to next LED
 	]
 
