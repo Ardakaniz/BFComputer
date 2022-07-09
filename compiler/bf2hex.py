@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import sys
 
 def main():
@@ -21,13 +23,13 @@ def main():
 				elif c == ']': hex.append(5)
 				elif c == '.': hex.append(6)
 				elif c == ',': hex.append(7)
+				elif c == '#': break # Comment
 
 	with open(output_filename, 'wb') as f:
 		f.write(bytes(hex))
 
 	with open(output_filename + '.txt', 'w') as f:
-		for v in hex:
-			f.write(str(v) + " ")
+		f.write(''.join(map(str, hex)))
 
 if __name__ == '__main__':
 	main()
