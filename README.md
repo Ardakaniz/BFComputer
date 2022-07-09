@@ -15,12 +15,7 @@
 You can find in this repo the different parts of this project :
 - The description of the hardware architecture, see [architecture (en) (not available yet)]() or [architecture (fr)](architecture/architecture_fr.md)
 - The "compiler", from BF to binary (actually just a Python script converting the 8 instructions `+-<>[].,` to a binary value from 0 to 7)
-- The microcode generator that describes the operations the computer has to run to execute the instructions. It is a C++ app that runs a Lua script where the description is.
-- Logisim files that implements a simulation of the computer. Here's a screenshot:
-  ![screenshot](logisim/screen.jpg)
-	And the simulation running on [YouTube](https://www.youtube.com/watch?v=eYhoZPgXOwk)
-
-I plan to build it in real, but I don't have the money and/or time to do so yet.
+- Simulation using [Digital](https://github.com/hneemann/Digital) and VHDL code in `simulation/VHDL`
 
 Some ressources that helped me getting interested in computer architecture and to design this one :
 - Ben Eater video series : https://eater.net/8bit
